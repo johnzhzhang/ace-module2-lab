@@ -101,8 +101,18 @@ router.post('/', (req: Request<Record<string, unknown>, Record<string, unknown>,
       }
 
       if (req.body.layout) {
-        const filePath: string = path.resolve(req.body.layout).toLowerCase()
-        const isForbiddenFile: boolean = (filePath.includes('ftp') || filePath.includes('ctf.key') || filePath.includes('encryptionkeys'))
+        const viewsPath: string = path.resolve('views')
+        const normalizedLayout: string = (typeof req.body.layout === 'string' ? req.body.layout : '').replace(/\\/g, '/')
+        const filePath: string = path.resolve(viewsPath, normalizedLayout)
+        const directPath: string = path.resolve(normalizedLayout)
+        const isPathInViews: boolean = (filePath.startsWith(viewsPath + path.sep) || directPath.startsWith(viewsPath + path.sep)) &&
+          !normalizedLayout.includes('..') &&
+          !normalizedLayout.includes('\0')
+        const filePathLower: string = filePath.toLowerCase()
+        const directPathLower: string = directPath.toLowerCase()
+        const isForbiddenFile: boolean = !isPathInViews ||
+          (filePathLower.includes('ftp') || filePathLower.includes('ctf.key') || filePathLower.includes('encryptionkeys')) ||
+          (directPathLower.includes('ftp') || directPathLower.includes('ctf.key') || directPathLower.includes('encryptionkeys'))
         if (!isForbiddenFile) {
           res.render('dataErasureResult', {
             ...req.body,
